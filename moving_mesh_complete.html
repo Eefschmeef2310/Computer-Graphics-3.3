@@ -95,7 +95,7 @@
             pos_trans.copy(pos);
             pos_trans.add(new THREE.Vector3(-size/2,-size/2,0));
             var len=20*pos_trans.length()/size;
-            pos_trans.z=0.1*size*Math.cos(len);
+            //pos_trans.z=0.1*size*Math.cos(len);
             vertices.push( pos_trans.x, pos_trans.y, pos_trans.z );
             //geom.vertices.push(pos_trans);
           }
@@ -118,10 +118,12 @@
             material_tissue = new THREE.MeshPhongMaterial();
             material_tissue.color=new THREE.Color(1,1,0.4);
             material_tissue.side = THREE.DoubleSide;
-            //material_tissue.wireframe=true;
+            material_tissue.wireframe=true;
             tissue = new THREE.Mesh( geom, material_tissue );
 
             tissue.geometry.computeVertexNormals();
+
+            tissue.name = "Terrain";
 
             scene.add(tissue);
 
@@ -131,8 +133,6 @@
 
       //CLICK CONTROLS
       var raycaster = new THREE.Raycaster();
-
-      var selectedObj = false;
 
       function onDocumentMouseDown( event ) {
 
@@ -145,22 +145,13 @@
          var intersects = raycaster.intersectObjects( scene.children, false );
 
          if ( intersects.length > 0 ) {
-            console.log(intersects[0].point);
-             if ((intersects[ 0 ].object.name=="loaded_mesh")&&(!selectedObj))
+             if ((intersects[ 0 ].object.name=="Terrain"))
              {
-               console.log("Selected!");
-               //var FaceI=intersects[ 0 ].face;
-               intersects[ 0 ].object.material.color= new THREE.Color(1,0.5,0.5);
-               selectedObj = true;
-             }
-             if ((intersects[ 0 ].object.name!="loaded_mesh")&&(selectedObj))
-             {
-               mesh.material.color= new THREE.Color(0.9,0.9,0.9);
-               var pos=intersects[0].point;
-               console.log("Placed!");
-               mesh.position.x=pos.x;
-               mesh.position.y=pos.y;
-               selectedObj = false;
+               var pos = tissue.geometry.getAttribute('position');
+               pos.setZ(12, -0.05);
+               //console.log(pos.getZ(1));
+               pos.needsUpdate = true;
+               tissue.geometry.computeVertexNormals();
              }
          }
       }
@@ -199,7 +190,7 @@
           currP.z=heightWave*size*Math.cos(len+interval);
           pos.setZ(i, currP.z);
         }
-        pos.needsUpdate = true
+        pos.needsUpdate = true;
         tissue.geometry.computeVertexNormals();
       }
     }
