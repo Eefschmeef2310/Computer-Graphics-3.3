@@ -60,13 +60,21 @@
       camera.position.set(0,5,20);
   	  camera.lookAt(0,0,1);
 
-      var material_floor = new THREE.MeshLambertMaterial();
+      //heightmap
+      let textureLoader = new THREE.TextureLoader();
+      const displacement = textureLoader.load('models/Heightmap.png');
+      //displacement.wrapS = displacement.wrapT = THREE.RepeatWrapping;
+      //displacement.repeat.set(1,1);
+
+      var material_floor = new THREE.MeshStandardMaterial();
+      material_floor.displacementMap = displacement;
+      //material_floor.displacementScale = 100;
       material_floor.color= new THREE.Color(0.8,0.8,1.0);
       material_floor.side=THREE.DoubleSide;
 
-      var geometry_plane = new THREE.PlaneGeometry(10,10,10,10);
+      var geometry_plane = new THREE.PlaneGeometry(10,10,100,100);
       var floorMesh= new THREE.Mesh(geometry_plane,material_floor);
-      floorMesh.rotation.x = Math.PI/2;
+      floorMesh.rotation.x = -Math.PI/2;
       floorMesh.name = 'Floor';
       scene.add(floorMesh);
 
@@ -121,8 +129,8 @@
         {
             if(guiVariables.placing && fakeObject != null)
             {
-              //for()
               fakeObject.position.x = intersects[0].point.x;
+              fakeObject.position.y = intersects[0].point.y;
               fakeObject.position.z = intersects[0].point.z;
               scene.add(fakeObject);
               fakeObjectCol.setFromObject(fakeObject);
