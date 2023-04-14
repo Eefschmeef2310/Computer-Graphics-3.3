@@ -63,33 +63,40 @@
       //heightmap
       let textureLoader = new THREE.TextureLoader();
       var displacementWidth;
+      var displacementHeight;
+      var imageData;
       const displacement = textureLoader.load('models/Heightmap.png');
 
       const img = new Image();
       img.onload = function() {
-        //alert(this.width + 'x' + this.height);
         displacementWidth = this.width;
-        //console.log(displacementWidth);
-        return displacementWidth;
+        displacementHeight = this.height;
+        var canvas = document.createElement('canvas');
+        var canvasContext = canvas.getContext("2d");
+        canvasContext.drawImage(img, 10, 10);
+        imageData = canvasContext.getImageData(0,0,displacementWidth, displacementHeight);
       }
       img.src = 'models/Heightmap.png';
+            
 
-      //get varaibles from image for use in object placement
-      //var canvas = document.createElement('canvas');
-      //console.log(displacementWidth);
-      //console.log(canvas.getContext("2d").getImageData(0,0, canvas.width, canvas.height));
-      //var image = document.createElement('image');
-      //image.src = displacement.image;
-      //var canvas = document.createElement('canvas');
-      //canvas.getContext('2d').drawImage(image, 0,0, image.width, image.height);
-      //var imageData = canvas.getContext("2d").getImageData(0,0, canvas.width, canvas.height);
-      //displacement.wrapS = displacement.wrapT = THREE.RepeatWrapping;
-      //displacement.repeat.set(1,1);
+      //get variables from image for use in object placement
+      function getVertex(imageData, mouseX, mouseY)
+      {
+        var px = Math.floor(mouseX * displacementWidth);
+        var py = Math.floor(mouseY * displacementHeight);
+        var index = (px  * displacementWidth + py);
+        index += (floorMesh.geometry.parameters.widthSegments * floorMesh.geometry.parameters.heightSegments)/2;
+        if(index < 0 || index >= imageData.data.length)
+        {
+          return 0;
+        }
+        return imageData.data[index];
+      }
 
       var material_floor = new THREE.MeshStandardMaterial();
       material_floor.displacementMap = displacement;
       material_floor.wireframe = true;
-      //material_floor.displacementScale = 100;
+      //material_floor.displacementScale = 1;
       material_floor.color= new THREE.Color(0.8,0.8,1.0);
       material_floor.side=THREE.DoubleSide;
 
@@ -99,9 +106,6 @@
       floorMesh.rotation.x = -Math.PI/2;
       floorMesh.name = 'Floor';
       scene.add(floorMesh);
-
-      //console.log(floorMesh.position.y);
-      //console.log(floorMesh.geometry.getAttribute('position').array);
 
       var controls = new OrbitControls( camera, renderer.domElement );
 
@@ -131,7 +135,6 @@
         {
           fakeObject = object;
         } );
-        console.log()
       }
 
       //MESH LOADING
@@ -146,18 +149,17 @@
         raycaster.setFromCamera( mouse, camera );
         
         var intersects = raycaster.intersectObjects( scene.children, false );
-
-        //fakeObjectCol.setFromObject(fakeObject);
-        //console.log(fakeObjectCol);
         
         if(intersects.length > 0 && intersects[0].object.name == 'Floor')
         {
             if(guiVariables.placing && fakeObject != null)
             {
               fakeObject.position.x = intersects[0].point.x;
-              fakeObject.position.y = intersects[0].point.y;
               fakeObject.position.z = intersects[0].point.z;
+              //fakeObject.position.y = getVertex(imageData, intersects[0].point.x, intersects[0].point.z)/255;
+              //console.log(fakeObject.position.y);
               scene.add(fakeObject);
+              //console.log(getPixel(imageData, mouse.x, mouse.y));
               fakeObjectCol.setFromObject(fakeObject);
             }
         }
@@ -214,8 +216,10 @@
                 {
                   object.position.x = intersects[0].point.x;
                   object.position.z = intersects[0].point.z;
+                  object.position.y = fakeObject.position.y;
 
                   var placedObject = fakeObject;
+
                   let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
                   placedObjects.push(placedObject);
                   scene.add(object);  
