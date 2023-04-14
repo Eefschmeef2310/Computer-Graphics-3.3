@@ -62,7 +62,27 @@
 
       //heightmap
       let textureLoader = new THREE.TextureLoader();
+      var displacementWidth;
       const displacement = textureLoader.load('models/Heightmap.png');
+
+      const img = new Image();
+      img.onload = function() {
+        //alert(this.width + 'x' + this.height);
+        displacementWidth = this.width;
+        //console.log(displacementWidth);
+        return displacementWidth;
+      }
+      img.src = 'models/Heightmap.png';
+
+      //get varaibles from image for use in object placement
+      //var canvas = document.createElement('canvas');
+      //console.log(displacementWidth);
+      //console.log(canvas.getContext("2d").getImageData(0,0, canvas.width, canvas.height));
+      //var image = document.createElement('image');
+      //image.src = displacement.image;
+      //var canvas = document.createElement('canvas');
+      //canvas.getContext('2d').drawImage(image, 0,0, image.width, image.height);
+      //var imageData = canvas.getContext("2d").getImageData(0,0, canvas.width, canvas.height);
       //displacement.wrapS = displacement.wrapT = THREE.RepeatWrapping;
       //displacement.repeat.set(1,1);
 
@@ -79,6 +99,9 @@
       floorMesh.rotation.x = -Math.PI/2;
       floorMesh.name = 'Floor';
       scene.add(floorMesh);
+
+      //console.log(floorMesh.position.y);
+      //console.log(floorMesh.geometry.getAttribute('position').array);
 
       var controls = new OrbitControls( camera, renderer.domElement );
 
@@ -223,7 +246,7 @@
               //scene.add(placedObjects[placedObjects.length - 1]);
              }
          }
-         console.log(placedObjectsCols.length);
+         //console.log(placedObjectsCols.length);
       }
 
       // when the mouse is clicked, call the given function
