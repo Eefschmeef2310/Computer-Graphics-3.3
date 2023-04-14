@@ -68,12 +68,14 @@
 
       var material_floor = new THREE.MeshStandardMaterial();
       material_floor.displacementMap = displacement;
+      material_floor.wireframe = true;
       //material_floor.displacementScale = 100;
       material_floor.color= new THREE.Color(0.8,0.8,1.0);
       material_floor.side=THREE.DoubleSide;
 
       var geometry_plane = new THREE.PlaneGeometry(10,10,100,100);
       var floorMesh= new THREE.Mesh(geometry_plane,material_floor);
+      
       floorMesh.rotation.x = -Math.PI/2;
       floorMesh.name = 'Floor';
       scene.add(floorMesh);
