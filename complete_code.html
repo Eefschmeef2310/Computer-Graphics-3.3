@@ -77,42 +77,59 @@
         canvasContext.drawImage(texture.image, 0, 0);
         imageData = canvasContext.getImageData(0,0,displacementWidth, displacementHeight);
 
+        var index = 0
         for(var i = 0; i < imageData.data.length; i += 4)
         {
-          vertices[i] = imageData.data[i+1];
+          vertices[index] = imageData.data[i+1];
+          index++;
         }
+        index = 0;
         for(var i = 0; i < floorMesh.geometry.attributes.position.array.length; i += 3)
         {
-          meshVertices[i] = [floorMesh.geometry.attributes.position.array[i], floorMesh.geometry.attributes.position.array[i+1]];
+          meshVertices[index] = [Math.round(floorMesh.geometry.attributes.position.array[i]*(floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width)) / (floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width), 
+                             Math.round(floorMesh.geometry.attributes.position.array[i+1]*(floorMesh.geometry.parameters.heightSegments/floorMesh.geometry.parameters.height)) / (floorMesh.geometry.parameters.heightSegments/floorMesh.geometry.parameters.height)];
+          //meshVertices[i] = [floorMesh.geometry.attributes.position.array[i], floorMesh.geometry.attributes.position.array[i+1]];
+          index++;
         }
-        console.log(meshVertices);
+        //console.log(meshVertices);
       });
-
-      
             
       //get variables from image for use in object placement
       function getY(mouseX, mouseY)
       {
-        //console.log(meshVertices[0]);
-        console.log(meshVertices[0]);
-        return(vertices[meshVertices.indexOf([mouseX,mouseY])]);
-      }
-
-      
+        for(var i = 0; i < meshVertices.length; i++)
+        {
+          if(Math.round(mouseX*(floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width)) / (floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width) == meshVertices[i][0])
+          {
+            if(Math.round(mouseY*(floorMesh.geometry.parameters.heightSegments/floorMesh.geometry.parameters.height)) / (floorMesh.geometry.parameters.heightSegments/floorMesh.geometry.parameters.height) == meshVertices[i][1])
+            {
+              return vertices[i];
+            }
+          }
+        }
+        //console.log(meshVertices[0])
+        //console.log(meshVertices[0].indexOf(Math.round(mouseX*(floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width)) / (floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width)));
+        //console.log(test.indexOf(Math.round(mouseX*(floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width)) / (floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width)));
+        //console.log(meshVertices.indexOf(-5,5));
+        //return(vertices[meshVertices.indexOf([Math.round(mouseX*(floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width)) / (floorMesh.geometry.parameters.widthSegments/floorMesh.geometry.parameters.width),
+                                              //Math.round(mouseY*(floorMesh.geometry.parameters.heightSegments/floorMesh.geometry.parameters.height)) / (floorMesh.geometry.parameters.heightSegments/floorMesh.geometry.parameters.height)])]);
+      }      
 
       var material_floor = new THREE.MeshStandardMaterial();
       material_floor.displacementMap = displacement;
       material_floor.wireframe = true;
-      //material_floor.displacementScale = 1;
+      material_floor.displacementScale = 1;
       material_floor.color= new THREE.Color(0.8,0.8,1.0);
       material_floor.side=THREE.DoubleSide;
 
-      var geometry_plane = new THREE.PlaneGeometry(10,10,100,100);
+      var geometry_plane = new THREE.PlaneGeometry(10,10, 100, 100);
       var floorMesh= new THREE.Mesh(geometry_plane,material_floor);
       
       floorMesh.rotation.x = -Math.PI/2;
       floorMesh.name = 'Floor';
       scene.add(floorMesh);
+      //console.log(floorMesh.geometry.parameters.width/floorMesh.geometry.parameters.widthSegments);
+      //console.log(floorMesh.geometry.attributes.position.array[3] - floorMesh.geometry.attributes.position.array[0]);
 
       var controls = new OrbitControls( camera, renderer.domElement );
 
@@ -162,15 +179,15 @@
             if(guiVariables.placing && fakeObject != null)
             {
               fakeObject.position.x = intersects[0].point.x;
-              //fakeObject.position.y = vertices[getVertex(imageData, mouse.x, mouse.y)];
+              fakeObject.position.y = getY(intersects[0].point.x, -intersects[0].point.z)/255;
               fakeObject.position.z = intersects[0].point.z;
               //console.log(intersects[0].point);
               //fakeObject.position.y = intersects[0].uv.y;
               //fakeObject.position.y = getVertex(imageData, mouse.x, mouse.y)/255;
-              console.log(getY(mouse.x, mouse.y));
+              console.log(getY(intersects[0].point.x, -intersects[0].point.z));
               scene.add(fakeObject);
               //console.log(getPixel(imageData, mouse.x, mouse.y));
-              fakeObjectCol.setFromObject(fakeObject);
+              //fakeObjectCol.setFromObject(fakeObject);
             }
         }
         else
@@ -245,12 +262,13 @@
                     {
                       object.position.x = intersects[0].point.x;
                       object.position.z = intersects[0].point.z;
+                      object.position.y = fakeObject.position.y;
 
                       var placedObject = fakeObject;
                       let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
                       placedObjects.push(placedObject);
                       scene.add(object);  
-                      placedObjectCol.setFromObject(fakeObject);  
+                      //placedObjectCol.setFromObject(fakeObject);  
                       placedObjectsCols.push(placedObjectCol);
                     }
                   }
