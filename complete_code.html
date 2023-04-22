@@ -65,10 +65,11 @@
       var displacementWidth;
       var displacementHeight;
       var imageData;
-      var vertices = [];
+      var pixels = [];
       var meshVertices = [];
 
-      const displacement = textureLoader.load('models/Heightmap.png', (texture) => {
+      const displacement = textureLoader.load('models/Grass.jpg', (texture) => {
+        material_floor.map = displacement;
         displacementWidth = texture.image.width;
         displacementHeight = texture.image.height;
         //console.log(displacementHeight);
@@ -80,7 +81,7 @@
         var index = 0
         for(var i = 0; i < imageData.data.length; i += 4)
         {
-          vertices[index] = imageData.data[i+1];
+          pixels[index] = imageData.data[i+1];
           index++;
         }
         index = 0;
@@ -103,7 +104,7 @@
           {
             if(Math.round(mouseY*(floorMesh.geometry.parameters.heightSegments/floorMesh.geometry.parameters.height)) / (floorMesh.geometry.parameters.heightSegments/floorMesh.geometry.parameters.height) == meshVertices[i][1])
             {
-              return vertices[i];
+              return pixels[i];
             }
           }
         }
@@ -117,9 +118,11 @@
 
       var material_floor = new THREE.MeshStandardMaterial();
       material_floor.displacementMap = displacement;
-      material_floor.wireframe = true;
+      material_floor.map = displacement;
+      material_floor.normalMap = textureLoader.load('models/GrassNormal.png')
+      //material_floor.wireframe = true;
       material_floor.displacementScale = 1;
-      material_floor.color= new THREE.Color(0.8,0.8,1.0);
+      //material_floor.color= new THREE.Color(0.8,0.8,1.0);
       material_floor.side=THREE.DoubleSide;
 
       var geometry_plane = new THREE.PlaneGeometry(10,10, 100, 100);
@@ -179,7 +182,7 @@
             if(guiVariables.placing && fakeObject != null)
             {
               fakeObject.position.x = intersects[0].point.x;
-              fakeObject.position.y = getY(intersects[0].point.x, -intersects[0].point.z)/255;
+              fakeObject.position.y = getY(intersects[0].point.x, -intersects[0].point.z)/255 - 0.1;
               fakeObject.position.z = intersects[0].point.z;
               //console.log(intersects[0].point);
               //fakeObject.position.y = intersects[0].uv.y;
