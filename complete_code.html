@@ -65,33 +65,40 @@
       var displacementWidth;
       var displacementHeight;
       var imageData;
-      const displacement = textureLoader.load('models/Heightmap.png');
+      var vertices = [];
+      var meshVertices = [];
 
-      const img = new Image();
-      img.onload = function() {
-        displacementWidth = this.width;
-        displacementHeight = this.height;
+      const displacement = textureLoader.load('models/Heightmap.png', (texture) => {
+        displacementWidth = texture.image.width;
+        displacementHeight = texture.image.height;
+        //console.log(displacementHeight);
         var canvas = document.createElement('canvas');
-        var canvasContext = canvas.getContext("2d");
-        canvasContext.drawImage(img, 10, 10);
+        var canvasContext = canvas.getContext('2d');
+        canvasContext.drawImage(texture.image, 0, 0);
         imageData = canvasContext.getImageData(0,0,displacementWidth, displacementHeight);
-      }
-      img.src = 'models/Heightmap.png';
-            
 
-      //get variables from image for use in object placement
-      function getVertex(imageData, mouseX, mouseY)
-      {
-        var px = Math.floor(mouseX * displacementWidth);
-        var py = Math.floor(mouseY * displacementHeight);
-        var index = (px  * displacementWidth + py);
-        index += (floorMesh.geometry.parameters.widthSegments * floorMesh.geometry.parameters.heightSegments)/2;
-        if(index < 0 || index >= imageData.data.length)
+        for(var i = 0; i < imageData.data.length; i += 4)
         {
-          return 0;
+          vertices[i] = imageData.data[i+1];
         }
-        return imageData.data[index];
+        for(var i = 0; i < floorMesh.geometry.attributes.position.array.length; i += 3)
+        {
+          meshVertices[i] = [floorMesh.geometry.attributes.position.array[i], floorMesh.geometry.attributes.position.array[i+1]];
+        }
+        console.log(meshVertices);
+      });
+
+      
+            
+      //get variables from image for use in object placement
+      function getY(mouseX, mouseY)
+      {
+        //console.log(meshVertices[0]);
+        console.log(meshVertices[0]);
+        return(vertices[meshVertices.indexOf([mouseX,mouseY])]);
       }
+
+      
 
       var material_floor = new THREE.MeshStandardMaterial();
       material_floor.displacementMap = displacement;
@@ -155,9 +162,12 @@
             if(guiVariables.placing && fakeObject != null)
             {
               fakeObject.position.x = intersects[0].point.x;
+              //fakeObject.position.y = vertices[getVertex(imageData, mouse.x, mouse.y)];
               fakeObject.position.z = intersects[0].point.z;
-              //fakeObject.position.y = getVertex(imageData, intersects[0].point.x, intersects[0].point.z)/255;
-              //console.log(fakeObject.position.y);
+              //console.log(intersects[0].point);
+              //fakeObject.position.y = intersects[0].uv.y;
+              //fakeObject.position.y = getVertex(imageData, mouse.x, mouse.y)/255;
+              console.log(getY(mouse.x, mouse.y));
               scene.add(fakeObject);
               //console.log(getPixel(imageData, mouse.x, mouse.y));
               fakeObjectCol.setFromObject(fakeObject);
