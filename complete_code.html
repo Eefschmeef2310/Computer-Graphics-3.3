@@ -101,10 +101,8 @@
 
       var size=10;
       var subd = 100;
-      var material_tissue;
       var Init = function ( )
       {
-          subd = displacementWidth;
           var step=size/subd;
           var geom = new THREE.BufferGeometry();
           const indices = [];
@@ -143,7 +141,7 @@
 
           var material_floor = new THREE.MeshStandardMaterial();
           //material_floor.wireframe = true;
-          material_floor.map = displacement;
+          material_floor.map = textureLoader.load('models/Grass.jpg');
           material_floor.normalMap = textureLoader.load('models/GrassNormal.png');
           material_floor.side=THREE.DoubleSide;
           tissue = new THREE.Mesh( geom, material_floor );
@@ -151,9 +149,19 @@
           tissue.geometry.computeVertexNormals();
           tissue.rotation.x = -Math.PI/2;
           tissue.name = "Floor";
+          console.log(tissue.geometry.attributes);
+
+          var floorGeom = new THREE.PlaneGeometry(10,10,100,100);
+          var floorObj = new THREE.Mesh(floorGeom, material_floor);
+          //scene.add(floorObj);
+          console.log(floorGeom.attributes);
+
+          tissue.geometry.setAttribute('uv', floorGeom.attributes.uv);
+
           scene.add(tissue);
 
       }   
+      
       var controls = new OrbitControls( camera, renderer.domElement );
 
       var cameralight = new THREE.PointLight( new THREE.Color(1,1,1), 0.5 );
