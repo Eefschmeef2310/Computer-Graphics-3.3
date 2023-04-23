@@ -149,13 +149,8 @@
           tissue.geometry.computeVertexNormals();
           tissue.rotation.x = -Math.PI/2;
           tissue.name = "Floor";
-          console.log(tissue.geometry.attributes);
 
           var floorGeom = new THREE.PlaneGeometry(10,10,100,100);
-          var floorObj = new THREE.Mesh(floorGeom, material_floor);
-          //scene.add(floorObj);
-          console.log(floorGeom.attributes);
-
           tissue.geometry.setAttribute('uv', floorGeom.attributes.uv);
 
           scene.add(tissue);
@@ -168,7 +163,7 @@
       camera.add( cameralight );
       scene.add(camera);
 
-      var ambientlight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.5);
+      var ambientlight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.2);
       scene.add(ambientlight);
 
       //GUI
@@ -178,7 +173,7 @@
         placing: true
       };
       const gui = new GUI();
-      gui.add(guiVariables,'objects',['BigBush', 'BigGrass', 'BigRock1', 'BigRock2', 'Branch', 'OrangeMushroom', 'PineTree', 'RedMushroom', 'SmallBush', 'SmallGrass', 'SmallRock1', 'SmallRock2', 'Stump', 'Tree']).onChange(value => changeSelected(value));
+      gui.add(guiVariables,'objects',['BigBush', 'BigGrass', 'BigRock1', 'BigRock2', 'Branch', 'OrangeMushroom', 'PineTree', 'RedMushroom', 'SmallBush', 'SmallGrass', 'SmallRock1', 'SmallRock2', 'Stump', 'Tree', 'Fire']).onChange(value => changeSelected(value));
 
       //OBJECT PLACER
       var loadPath = 'models/' + guiVariables.objects + '.fbx';
@@ -239,6 +234,32 @@
       var selectedObj = false;
       var placedObjects = [];
       var placedObjectsCols = [];
+      var pointLights = [];
+
+      function placeObject(object, intersects)
+      {
+        object.position.x = intersects[0].point.x;
+        object.position.z = intersects[0].point.z;
+        object.position.y = intersects[0].point.y;
+
+        var placedObject = fakeObject;
+
+        let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+        placedObjects.push(placedObject);
+        if(loadPath == 'models/Fire.fbx')
+        {
+          var light = new THREE.PointLight(0xff0000, 2, 10);
+          light.position.set(object.position.x, object.position.y+1, object.position.z);
+          light.castShadow = true;
+          scene.add(light);
+          var lightHelper = new THREE.PointLightHelper(light);
+          scene.add(lightHelper)
+          pointLights.push(light);
+        }
+        scene.add(object);  
+        placedObjectCol.setFromObject(placedObject);  
+        placedObjectsCols.push(placedObjectCol);
+      }
 
       function onDocumentMouseDown( event ) {
          var mouse = new THREE.Vector2;
@@ -257,17 +278,7 @@
               {        
                 if(placedObjects.length == 0)
                 {
-                  object.position.x = intersects[0].point.x;
-                  object.position.z = intersects[0].point.z;
-                  object.position.y = intersects[0].point.y;
-
-                  var placedObject = fakeObject;
-
-                  let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-                  placedObjects.push(placedObject);
-                  scene.add(object);  
-                  placedObjectCol.setFromObject(placedObject);  
-                  placedObjectsCols.push(placedObjectCol);
+                  placeObject(object, intersects);
                 } 
                 else
                 {
@@ -283,17 +294,7 @@
                   }
                   if(!isTouching)
                   {
-                    object.position.x = intersects[0].point.x;
-                    object.position.z = intersects[0].point.z;
-                    object.position.y = intersects[0].point.y;
-
-                    var placedObject = fakeObject;
-
-                    let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-                    placedObjects.push(placedObject);
-                    scene.add(object);  
-                    placedObjectCol.setFromObject(placedObject);
-                    placedObjectsCols.push(placedObjectCol);
+                    placeObject(object, intersects);
                   }
                 }           
               } );
@@ -324,6 +325,7 @@
       window.addEventListener( 'resize', MyResize);
       document.addEventListener( 'mousemove', objectPlacer );
       document.addEventListener( 'mousedown', onDocumentMouseDown );
+      renderer.shadowMap.enabled = true;
 
     </script>
   </body>
