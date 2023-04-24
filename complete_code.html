@@ -49,9 +49,11 @@
   import { GUI } from './build/gui/lil-gui.module.min.js';
 
       var scene = new THREE.Scene( );
+      //scene.background = new THREE.Color(135/255,206/255,235/255);
       var renderer = new THREE.WebGLRenderer( );
-
       renderer.setSize(window.innerWidth,window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
 
       document.body.appendChild(renderer.domElement );
 
@@ -65,10 +67,8 @@
       var displacementWidth;
       var displacementHeight;
       var imageData;
-      var pixels = [];
-      var meshVertices = [];
 
-      const displacement = textureLoader.load('models/Heightmap.png', (texture) => {
+      const displacement = textureLoader.load('models/Grass.jpg', (texture) => {
         displacementWidth = texture.image.width;
         displacementHeight = texture.image.height;
         //console.log(displacementHeight);
@@ -76,38 +76,17 @@
         var canvasContext = canvas.getContext('2d');
         canvasContext.drawImage(texture.image, 0, 0);
         imageData = canvasContext.getImageData(0,0,displacementWidth, displacementHeight);
-        //console.log(imageData.data);
-        for(var j = 0; j < displacementHeight; j +=1)
-        {
-          pixels.push([]);
-          for(var i = 0; i < displacementWidth; i += 1)
-          {
-            //console.log(imageData.data[i+1]);
-            pixels[j].push(imageData.data[4*i+1+j*displacementHeight]);
-          }
-        }
         
-        //console.log(imageData.data);
-        console.log(pixels);
         var material = new THREE.MeshStandardMaterial();
         material.map = displacement;
         material.side = THREE.DoubleSide;
-        material.wireframe = true;
+        material.normalMap = textureLoader.load('models/GrassNormal.png');
         //material.displacementMap = textureLoader.load('models/Heightmap.png');
         var floorGeometry = new THREE.PlaneGeometry(10,10,displacementWidth,displacementHeight);
         var floorMesh = new THREE.Mesh(floorGeometry, material);
-        scene.add(floorMesh);
         floorMesh.rotation.x = -Math.PI/2;
-        console.log(material);
-        for(var j = 0; j < displacementHeight; j +=1)
-        {
-          meshVertices.push([]);
-          for(var i = 0; i < displacementWidth; i += 1)
-          {
-            //console.log(imageData.data[i+1]);
-            meshVertices[j].push(floorMesh.geometry.attributes.position.array[3*i+1+j*displacementHeight]);
-          }
-        }
+        floorMesh.receiveShadow = true;
+        scene.add(floorMesh);
 
         var index = 2;
         var imageIndex = 1;
@@ -119,82 +98,14 @@
             index += 3;
             imageIndex += 4;
           }
-          //index = y*displacementHeight;
+          index+=3;
         }     
         floorMesh.name="Floor";
       });
-
-      // var tissue = null;
-      // function AccessGrid(x,y,subd)
-      // {
-      //   var index=x*subd+y;
-      //   return index;
-      // }
-
-      // var size=10;
-      // var subd = 100;
-      // var Init = function ( )
-      // {
-      //     var step=size/subd;
-      //     var geom = new THREE.BufferGeometry();
-      //     const indices = [];
-      //     const vertices = [];
-
-      //     for (var i=0;i<subd;i++)
-      //     {
-      //       for (var j=0;j<subd;j++)
-      //       {
-      //         var pos = new THREE.Vector3(i*step,j*step,0);
-      //         var pos_trans= new THREE.Vector3;
-      //         pos_trans.copy(pos);
-      //         pos_trans.add(new THREE.Vector3(-size/2,-size/2,0));
-      //         pos_trans.z=pixels[i][j]/255;
-      //         //console.log(pos_trans);
-      //         vertices.push( pos_trans.x, pos_trans.y, pos_trans.z );
-      //       }
-      //     }
-            
-      //     for (var i=0;i<subd-1;i++)
-      //     {
-      //       for (var j=0;j<subd-1;j++)
-      //       {
-      //         var Idx0=AccessGrid(i,j,subd);
-      //         var Idx1=AccessGrid(i+1,j,subd);
-      //         var Idx2=AccessGrid(i+1,j+1,subd);
-      //         var Idx3=AccessGrid(i,j+1,subd);
-              
-      //         indices.push( Idx1, Idx0, Idx2 );
-      //         indices.push( Idx2, Idx0, Idx3  );
-      //       }
-      //     }
-      //     geom.setIndex( indices );
-      //     geom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
-      //     geom.computeVertexNormals();
-
-      //     var material_floor = new THREE.MeshStandardMaterial();
-      //     //material_floor.wireframe = true;
-      //     material_floor.map = textureLoader.load('models/Grass.jpg');
-      //     material_floor.normalMap = textureLoader.load('models/GrassNormal.png');
-      //     material_floor.side=THREE.DoubleSide;
-      //     tissue = new THREE.Mesh( geom, material_floor );
-
-      //     tissue.geometry.computeVertexNormals();
-      //     tissue.rotation.x = -Math.PI/2;
-      //     tissue.name = "Floor";
-
-      //     var floorGeom = new THREE.PlaneGeometry(10,10,100,100);
-      //     tissue.geometry.setAttribute('uv', floorGeom.attributes.uv);
-
-      //     //scene.add(tissue);
-
-      // }   
-
-      
-      
       
       var controls = new OrbitControls( camera, renderer.domElement );
 
-      var cameralight = new THREE.PointLight( new THREE.Color(1,1,1), 0.5 );
+      var cameralight = new THREE.PointLight( new THREE.Color(1,1,1), 0.2 );
       camera.add( cameralight );
       scene.add(camera);
 
@@ -208,7 +119,7 @@
         placing: true
       };
       const gui = new GUI();
-      gui.add(guiVariables,'objects',['BigBush', 'BigGrass', 'BigRock1', 'BigRock2', 'Branch', 'OrangeMushroom', 'PineTree', 'RedMushroom', 'SmallBush', 'SmallGrass', 'SmallRock1', 'SmallRock2', 'Stump', 'Tree', 'Fire']).onChange(value => changeSelected(value));
+      gui.add(guiVariables,'objects',['BigBush', 'BigGrass', 'BigRock1', 'BigRock2', 'Branch', 'OrangeMushroom', 'PineTree', 'RedMushroom', 'SmallBush', 'SmallGrass', 'SmallRock1', 'SmallRock2', 'Stump', 'Fire']).onChange(value => changeSelected(value));
 
       //OBJECT PLACER
       var loadPath = 'models/' + guiVariables.objects + '.fbx';
@@ -225,6 +136,7 @@
       //MESH LOADING
       const loader = new FBXLoader();
       var raycaster = new THREE.Raycaster();
+      var light;
       function objectPlacer( event )
       {
         var mouse = new THREE.Vector2;
@@ -242,12 +154,36 @@
               fakeObject.position.x = intersects[0].point.x;
               fakeObject.position.y = intersects[0].point.y;
               fakeObject.position.z = intersects[0].point.z;
+              fakeObject.traverse(function(child)
+              {
+                if(child.isMesh)
+                {
+                  child.castShadow = true;
+                }
+              });
+              if(loadPath == 'models/Fire.fbx')
+              {
+                if(light == null)
+                {
+                  light = new THREE.PointLight(0xff0000, 2, 10);
+                  light.position.set(fakeObject.position.x, fakeObject.position.y+1, fakeObject.position.z);
+                  light.castShadow = true;
+                  scene.add(light);
+                }
+                else
+                {
+                  light.position.set(fakeObject.position.x, fakeObject.position.y+1, fakeObject.position.z);
+                }
+                
+              }
               scene.add(fakeObject);
             }
         }
         else
         {
           scene.remove(fakeObject);
+          scene.remove(light);
+          light = null;
         }
       }
       var fakeObject;
@@ -278,6 +214,13 @@
         object.position.y = intersects[0].point.y;
 
         var placedObject = fakeObject;
+        object.traverse(function(child)
+        {
+          if(child.isMesh)
+          {
+            child.castShadow = true;
+          }
+        });
 
         let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
         placedObjects.push(placedObject);
@@ -287,8 +230,6 @@
           light.position.set(object.position.x, object.position.y+1, object.position.z);
           light.castShadow = true;
           scene.add(light);
-          var lightHelper = new THREE.PointLightHelper(light);
-          scene.add(lightHelper)
           pointLights.push(light);
         }
         scene.add(object);  
@@ -360,7 +301,6 @@
       window.addEventListener( 'resize', MyResize);
       document.addEventListener( 'mousemove', objectPlacer );
       document.addEventListener( 'mousedown', onDocumentMouseDown );
-      renderer.shadowMap.enabled = true;
 
     </script>
   </body>
