@@ -293,8 +293,6 @@
 
       requestAnimationFrame(MyUpdateLoop);
 
-
-      var selectedObj = false;
       var placedObjects = [];
       var placedObjectsY = [];
       var placedObjectsCols = [];
@@ -304,9 +302,11 @@
 
       function placeObject(object, intersects)
       {
-        object.position.x = intersects[0].point.x;
-        object.position.z = intersects[0].point.z;
-        object.position.y = intersects[0].point.y;
+        object.position.x = intersects[intersects.length-1].point.x;
+        object.position.z = intersects[intersects.length-1].point.z;
+        object.position.y = intersects[intersects.length-1].point.y;
+
+        object.rotation.y = fakeObject.rotation.y;
 
         //var placedObject = fakeObject;
         object.traverse(function(child)
@@ -337,6 +337,8 @@
         let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
         placedObjectCol.setFromObject(object);  
         placedObjectsCols.push(placedObjectCol);
+
+        fakeObject.rotation.set(0,0,0);
       }
 
       function animateFire()
@@ -349,6 +351,7 @@
             pointLightIntervals[i] += guiVariables.lightInterval;
           }
         }
+        renderer.render(scene,camera);
         
         requestAnimationFrame(animateFire);
       }
@@ -361,11 +364,11 @@
 
          raycaster.setFromCamera( mouse, camera );
 
-         var intersects = raycaster.intersectObjects( scene.children, false );
+         var intersects = raycaster.intersectObjects( scene.children, true );
 
          if ( intersects.length > 0 ) {
             fakeObjectCol.setFromObject(fakeObject);
-            if ((intersects[ 0 ].object.name=="Floor")&& guiVariables.placing)
+            if (intersects[intersects.length-1].object.name=="Floor")
             {    
               loader.load(loadPath, function ( object )
               {        
@@ -392,11 +395,44 @@
                 }           
               } );
             }
+            else
+            {
+              scene.remove(intersects[0].object.parent);
+              placedObjectsY.splice(placedObjects.indexOf(intersects[0].object.parent), 1);
+              placedObjectsCols.splice(placedObjects.indexOf(intersects[0].object.parent), 1);
+              
+              if(intersects[0].object.parent.name=="")
+              {
+                var fireObject = placedObjects[placedObjects.indexOf(intersects[0].object.parent)];
+                fireObject.position.y += 1;
+                for(var i = 0; i < pointLights.length; i++)
+                {
+                  if(pointLights[i].position.x == fireObject.position.x && pointLights[i].position.y == fireObject.position.y && pointLights[i].position.z == fireObject.position.z)
+                  {
+                    pointLightIntervals.splice(pointLights.indexOf(pointLights[i]),1);
+                    pointLightsObjects.splice(placedObjects.indexOf(intersects[0].object.parent), 1);
+                    scene.remove(pointLights[i]);
+                    pointLights.splice(i,1);
+                  }
+                }
+              }
+              placedObjects.splice(placedObjects.indexOf(intersects[0].object.parent), 1);
+            }
          }
       }
 
-      // when the mouse is clicked, call the given function
-      document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+      function rotatefakeObject(event)
+      {
+        var keyCode = event.which;
+        if(keyCode == 81)
+        {
+          fakeObject.rotation.y += 0.5;
+        }
+        if(keyCode == 69)
+        {
+          fakeObject.rotation.y -= 0.5;
+        }
+      }
 
       //this function is called when the window is resized
       var MyResize = function ( )
@@ -416,6 +452,7 @@
       };
       //link the resize of the window to the update of the camera
       window.addEventListener( 'resize', MyResize);
+      document.addEventListener( 'keydown', rotatefakeObject);
       document.addEventListener( 'mousemove', objectPlacer );
       document.addEventListener( 'mousedown', onDocumentMouseDown );
 
