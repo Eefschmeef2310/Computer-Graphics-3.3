@@ -29,8 +29,7 @@
     </style>
 
     <div id="info">
-      <p>This is the first example using threeJS<br>
-      left button to rotate the scene, scroll to zoom in/out</p>
+      <p>24428486 - Introduction To Computer Graphics Task 3.3</p>
     </div>
 
 		<script type="importmap">
@@ -49,7 +48,7 @@
   import { GUI } from './build/gui/lil-gui.module.min.js';
 
       var scene = new THREE.Scene( );
-      //scene.background = new THREE.Color(135/255,206/255,235/255);
+      scene.background = new THREE.Color(135/255,206/255,235/255);
       var renderer = new THREE.WebGLRenderer( );
       renderer.setSize(window.innerWidth,window.innerHeight);
       renderer.shadowMap.enabled = true;
@@ -67,6 +66,9 @@
       var displacementWidth;
       var displacementHeight;
       var imageData;
+      var material = new THREE.MeshStandardMaterial();
+      var floorMesh;
+      var floorGeometry;
 
       const displacement = textureLoader.load('models/Grass.jpg', (texture) => {
         displacementWidth = texture.image.width;
@@ -77,49 +79,135 @@
         canvasContext.drawImage(texture.image, 0, 0);
         imageData = canvasContext.getImageData(0,0,displacementWidth, displacementHeight);
         
-        var material = new THREE.MeshStandardMaterial();
         material.map = displacement;
         material.side = THREE.DoubleSide;
         material.normalMap = textureLoader.load('models/GrassNormal.png');
+        
         //material.displacementMap = textureLoader.load('models/Heightmap.png');
-        var floorGeometry = new THREE.PlaneGeometry(10,10,displacementWidth,displacementHeight);
-        var floorMesh = new THREE.Mesh(floorGeometry, material);
+        floorGeometry = new THREE.PlaneGeometry(10,10,displacementWidth,displacementHeight);
+        floorMesh = new THREE.Mesh(floorGeometry, material);
         floorMesh.rotation.x = -Math.PI/2;
         floorMesh.receiveShadow = true;
-        scene.add(floorMesh);
+        //scene.add(floorMesh);
 
+        generateDisplacement(floorMesh, guiVariables.displacementScale);
+        
+        floorMesh.name="Floor";
+      });
+
+      function generateDisplacement(floorMesh, value)
+      {
+        //Update mesh
+        floorMesh.geometry.dispose();
+        floorMesh.geometry = floorGeometry;
         var index = 2;
         var imageIndex = 1;
         for(var y = 0; y < displacementHeight; y++)
         {
           for(var x = 0; x < displacementWidth; x++)
           {
-            floorMesh.geometry.attributes.position.array[index] = imageData.data[imageIndex]/255;
+            floorMesh.geometry.attributes.position.array[index] = imageData.data[imageIndex]/255*value;
             index += 3;
             imageIndex += 4;
           }
           index+=3;
-        }     
-        floorMesh.name="Floor";
-      });
+        } 
+
+        //Update placed objects, collisions and lights
+        placedObjectsCols = [];
+        for(var i = 0; i < placedObjects.length; i++)
+        {
+          placedObjects[i].position.y = value*placedObjectsY[i];
+          let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+          placedObjectCol.setFromObject(placedObjects[i]);  
+          placedObjectsCols.push(placedObjectCol);
+        }
+        for(var i = 0; i < pointLights.length; i++)
+        {
+          pointLights[i].position.y = value*(pointLightsObjects[i].position.y/value)+1;
+        }   
+        scene.add(floorMesh);
+      }
       
       var controls = new OrbitControls( camera, renderer.domElement );
 
-      var cameralight = new THREE.PointLight( new THREE.Color(1,1,1), 0.2 );
+      var cameralight = new THREE.PointLight( new THREE.Color(1,1,1), 0.5 );
       camera.add( cameralight );
       scene.add(camera);
 
-      var ambientlight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.2);
+      var ambientlight = new THREE.AmbientLight(new THREE.Color(1,1,1), 0.5);
       scene.add(ambientlight);
+      
+      var dirLight = new THREE.SpotLight(new THREE.Color(1,1,1), 0.5);
+      dirLight.castShadow = true;
+      dirLight.position.x = 10;
+      dirLight.position.y = 10;
+      scene.add(dirLight);
 
       //GUI
-      var guiVariables = 
+      const guiVariables = 
       {
         objects: 'PineTree',
+        daytime: true,
+        displacementScale: 1,
+        lightColour: new THREE.Color(0xff0000),
+        lightMaxIntensity: 2,
+        lightInterval:0.01,
         placing: true
       };
       const gui = new GUI();
       gui.add(guiVariables,'objects',['BigBush', 'BigGrass', 'BigRock1', 'BigRock2', 'Branch', 'OrangeMushroom', 'PineTree', 'RedMushroom', 'SmallBush', 'SmallGrass', 'SmallRock1', 'SmallRock2', 'Stump', 'Fire']).onChange(value => changeSelected(value));
+      gui.add(guiVariables,'daytime').onChange(value => changeTime(value));
+      const floorFolder = gui.addFolder("Terrain");
+      floorFolder.add(material, 'wireframe');
+      floorFolder.add(guiVariables, 'displacementScale', 1,10,1).onChange(value=>generateDisplacement(floorMesh,value));
+      const lightFolder = gui.addFolder("Sun");
+      lightFolder.add(dirLight.position,'x', -10, 10, 1);
+      lightFolder.add(dirLight.position,'z', -10, 10, 1);
+      const nightFolder = gui.addFolder("Fire Lights");
+      nightFolder.addColor(guiVariables, 'lightColour').name('Light Colour').onChange(value => changeColours(value));
+      nightFolder.add(guiVariables, 'lightMaxIntensity', 1, 5, 1).name('Max Intensity').listen();
+      nightFolder.add(guiVariables, 'lightInterval', 0.01, 0.1, 0.01).name('Interval Speed').listen();
+      nightFolder.close();
+
+      function changeColours(value)
+      {
+        for(var i = 0; i < pointLights.length; i++)
+        {
+          pointLightsObjects[i].children[3].material.color = value;
+          pointLights[i].color = value;
+        }
+      }
+
+      function changeTime(daytime)
+      {
+        if(daytime) //daytime
+        {
+          scene.background = new THREE.Color(135/255,206/255,235/255);
+          ambientlight.intensity = 0.5;
+          cameralight.intensity = 0.5;
+          dirLight.intensity = 0.5;
+          for(var i=0; i < pointLights.length; i++)
+          {
+            pointLights[i].intensity = 0;
+          }
+          lightFolder.open();
+          nightFolder.close();
+        }
+        else //nighttime
+        {
+          scene.background = new THREE.Color(0,0,0);
+          ambientlight.intensity = 0.2;
+          cameralight.intensity = 0.2;
+          dirLight.intensity = 0;
+          for(var i=0; i < pointLights.length; i++)
+          {
+            pointLights[i].intensity = 2;
+          }
+          lightFolder.close();
+          nightFolder.open();
+        }
+      }
 
       //OBJECT PLACER
       var loadPath = 'models/' + guiVariables.objects + '.fbx';
@@ -165,10 +253,14 @@
               {
                 if(light == null)
                 {
-                  light = new THREE.PointLight(0xff0000, 2, 10);
+                  light = new THREE.PointLight(0xff0000, 1, 10);
                   light.position.set(fakeObject.position.x, fakeObject.position.y+1, fakeObject.position.z);
                   light.castShadow = true;
                   scene.add(light);
+                  if(guiVariables.daytime)
+                  {
+                    light.intensity = 0;
+                  }
                 }
                 else
                 {
@@ -204,8 +296,11 @@
 
       var selectedObj = false;
       var placedObjects = [];
+      var placedObjectsY = [];
       var placedObjectsCols = [];
       var pointLights = [];
+      var pointLightsObjects = [];
+      var pointLightIntervals = [];
 
       function placeObject(object, intersects)
       {
@@ -213,7 +308,7 @@
         object.position.z = intersects[0].point.z;
         object.position.y = intersects[0].point.y;
 
-        var placedObject = fakeObject;
+        //var placedObject = fakeObject;
         object.traverse(function(child)
         {
           if(child.isMesh)
@@ -222,20 +317,42 @@
           }
         });
 
-        let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-        placedObjects.push(placedObject);
+        placedObjects.push(object);
+        placedObjectsY.push(object.position.y/guiVariables.displacementScale);
         if(loadPath == 'models/Fire.fbx')
         {
           var light = new THREE.PointLight(0xff0000, 2, 10);
           light.position.set(object.position.x, object.position.y+1, object.position.z);
           light.castShadow = true;
-          scene.add(light);
           pointLights.push(light);
+          pointLightsObjects.push(object);
+          pointLightIntervals.push(0);
+          scene.add(light);
+          if(guiVariables.daytime)
+          {
+            light.intensity = 0;
+          }
         }
-        scene.add(object);  
-        placedObjectCol.setFromObject(placedObject);  
+        scene.add(object); 
+        let placedObjectCol = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+        placedObjectCol.setFromObject(object);  
         placedObjectsCols.push(placedObjectCol);
       }
+
+      function animateFire()
+      {
+        if(!guiVariables.daytime)
+        {
+          for(var i = 0; i < pointLights.length; i++)
+          {
+            pointLights[i].intensity = guiVariables.lightMaxIntensity*Math.sin(pointLightIntervals[i]);
+            pointLightIntervals[i] += guiVariables.lightInterval;
+          }
+        }
+        
+        requestAnimationFrame(animateFire);
+      }
+      requestAnimationFrame(animateFire);
 
       function onDocumentMouseDown( event ) {
          var mouse = new THREE.Vector2;
